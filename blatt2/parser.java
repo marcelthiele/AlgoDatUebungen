@@ -31,13 +31,11 @@ public class Parser {
     }
 
     private static int parseRecursive(String expression) throws Parser.ExpressionNotWellFormedException {
-        // System.out.println("Expression: " + expression);
-
         // Base Case: Just one number
         if (expression.length() == 1) {
             if (isNumber(expression.charAt(0)))
                 return expression.charAt(0) - '0';
-            else
+            else // if not a number, throw exception
                 throw new ExpressionNotWellFormedException();
         }
 
@@ -54,6 +52,8 @@ public class Parser {
             throw new ExpressionNotWellFormedException();
         }
 
+
+        //Found no errors so far, thus continue searching for X and Y
         char symbol = ' ';
         int symbolIndex = 0;
 
@@ -73,8 +73,8 @@ public class Parser {
                 // Found X
                 symbolIndex = i;
                 symbol = expression.charAt(symbolIndex);
-                X = parseRecursive(expression.substring(1, i));
-                break;
+                X = parseRecursive(expression.substring(1, i));     // eg ((1-3)*2) -> substring between char at index 1 and the Symbolindex, in this case 6 (Substring is endIndex-exclusive, so we don't need to add +1 to the index)
+                break;                                                         //     ^^^^^
             }
         }
 
