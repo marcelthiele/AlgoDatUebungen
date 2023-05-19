@@ -27,78 +27,30 @@ public class Parser {
      */
     public static int parse(String expression)
             throws ExpressionNotWellFormedException {
-        char[] expressionAsArray = expression.toCharArray();
-        Stack<Character> st = new Stack<Character>();
-
-        // Check if String has correct Parentheses Order
-        // For each opening Parenthese: put Matching closing Parentheses on Stack
-        // For each closing Parenthese: check, whether top Parenthese equals this
-        // closing Parenthese
-        // TODO akzeptiert zur Zeit auch noch falsche ausdrücke bsp: (())
-        for (int i = 0; i < expressionAsArray.length; i++) {
-            boolean isOpeningParenthese = isOpeningParenthese(expressionAsArray[i]);
-            boolean isClosingParenthese = checkisClosingParenthese(expressionAsArray[i]);
-            if (isOpeningParenthese)
-                st.push(getCounterPart(expressionAsArray[i]));
-            else if (isClosingParenthese) {
-                if (st.isEmpty())
-                    throw new ExpressionNotWellFormedException();
-                if (expressionAsArray[i] != st.pop())
-                    throw new ExpressionNotWellFormedException();
-            }
-        }
-
-        // Expresion is well Formatted
-        // Now, calculate result
-
         return parseRecursive(expression);
     }
 
-    public static int parseRecursive(String expression) throws Parser.ExpressionNotWellFormedException {
+    private static int parseRecursive(String expression) throws Parser.ExpressionNotWellFormedException {
         char[] expressionAsArray = expression.toCharArray();
         // System.out.println("Expression: " + expression);
 
-        if(expressionAsArray.length == 0){
-            throw new ExpressionNotWellFormedException();
-        }
-        if(!isOpeningParenthese(expressionAsArray[0]) && !isNumber(expressionAsArray[0])){
-            throw new ExpressionNotWellFormedException();
-        }
-
-        if(expressionAsArray.length == 2){
-            throw new ExpressionNotWellFormedException();
-        }
-
-        if(expressionAsArray.length < 5 && expressionAsArray.length > 1){
-            throw new ExpressionNotWellFormedException();
-        }
-
-
-        //Base Case: Just one number
+        // Base Case: Just one number
         if (expressionAsArray.length == 1) {
             if (isNumber(expressionAsArray[0]))
                 return expressionAsArray[0] - '0';
         }
-        // Base Case: Current Expression is just two Numbers and a Symbol
-        if (isNumber(expressionAsArray[0]) && isNumber(expressionAsArray[2])) {
-            int X = expressionAsArray[0] - '0';
-            int Y = expressionAsArray[2] - '0';
-            int result = 0;
-            switch (expressionAsArray[1]) {
-                case '+':
-                    result = X + Y;
-                    break;
-                case '*':
-                    result = X * Y;
-                    break;
-                case '-':
-                    result = X - Y;
-                    break;
-                case '/':
-                    result = X / Y;
-                    break;
-            }
-            return result;
+
+        // ERROR Cases
+        if (expressionAsArray.length < 5 && expressionAsArray.length > 1) {
+            // Is never allowed
+            // Expression must either be:
+            // 1. only one Number -> see Base Case
+            // 2. at least 5 chars -> "(X+Y)"
+            throw new ExpressionNotWellFormedException();
+        }
+        if (!isOpeningParenthese(expressionAsArray[0]) && !isNumber(expressionAsArray[0])) {
+            // Case: eg. "+...", "a..."
+            throw new ExpressionNotWellFormedException();
         }
 
         char symbol = ' ';
@@ -111,28 +63,26 @@ public class Parser {
             if (isOpeningParenthese(expressionAsArray[i])) {
                 xStack.push(')');
             }
-            if (checkisClosingParenthese(expressionAsArray[i])) {
-                if(xStack.isEmpty()) throw  new ExpressionNotWellFormedException();
+            if (isClosingParenthese(expressionAsArray[i])) {
+                if (xStack.isEmpty())
+                    throw new ExpressionNotWellFormedException();
                 xStack.pop();
             }
-            if (isSymbol(expressionAsArray[i]) && xStack.isEmpty()) {
-                symbol = expressionAsArray[i];
-                int beginIndex = 1;
-                int endIndex = i;
-                if (endIndex > beginIndex) {
-                    String newExpression = expression.substring(beginIndex, endIndex);
-                    X = parseRecursive(newExpression);
-                }else
-                    X = expressionAsArray[1] - '0';
+            if (isSymbol(expressionAsArray[i]) && xStack.isEmpty() && i > 1) {
+                // Found X
                 symbolIndex = i;
+                symbol = expressionAsArray[symbolIndex];
+                X = parseRecursive(expression.substring(1, i));
                 break;
             }
         }
 
         // FIND Y
+        // Y is string between the Symbol and the last closing Parenthese
         String YExpression = expression.substring(symbolIndex + 1, expressionAsArray.length - 1);
         int Y = parseRecursive(YExpression);
 
+        // Return Result according to symbol
         switch (symbol) {
             case '+':
                 return X + Y;
@@ -143,7 +93,9 @@ public class Parser {
             case '/':
                 return X / Y;
         }
-        return 0;
+
+        //Should never be reached, but if reached, throw exception
+        throw new ExpressionNotWellFormedException();
     }
 
     private static boolean isSymbol(char c) {
@@ -189,7 +141,7 @@ public class Parser {
         }
     }
 
-    private static boolean checkisClosingParenthese(char c) {
+    private static boolean isClosingParenthese(char c) {
         switch (c) {
             case ')':
                 return true;
@@ -200,20 +152,6 @@ public class Parser {
 
             default:
                 return false;
-        }
-    }
-
-    private static char getCounterPart(char c) {
-        switch (c) {
-            case '(':
-                return ')';
-            case '{':
-                return '}';
-            case '[':
-                return ']';
-
-            default:
-                return ' '; // TODO Throw error?
         }
     }
 
@@ -242,6 +180,8 @@ public class Parser {
             wellFormedCheck("(4-(7-1))", -2);
             wellFormedCheck("8", 8);
             wellFormedCheck("((1+1)*(2*2))", 8);
+            wellFormedCheck("((1+9)*(2-5))", -30);
+            wellFormedCheck("((0-9)*((1+9)*(2-5)))", -270);
 
             notWellFormedCheck(")8+)1(())");
             notWellFormedCheck("(8+())");
@@ -249,6 +189,7 @@ public class Parser {
             notWellFormedCheck("(   5    -7)");
             notWellFormedCheck("108");
             notWellFormedCheck("(8)");
+            notWellFormedCheck("(+8)");
         }
     }
 
