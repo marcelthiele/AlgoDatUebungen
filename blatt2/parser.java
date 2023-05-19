@@ -31,24 +31,25 @@ public class Parser {
     }
 
     private static int parseRecursive(String expression) throws Parser.ExpressionNotWellFormedException {
-        char[] expressionAsArray = expression.toCharArray();
         // System.out.println("Expression: " + expression);
 
         // Base Case: Just one number
-        if (expressionAsArray.length == 1) {
-            if (isNumber(expressionAsArray[0]))
-                return expressionAsArray[0] - '0';
+        if (expression.length() == 1) {
+            if (isNumber(expression.charAt(0)))
+                return expression.charAt(0) - '0';
+            else
+                throw new ExpressionNotWellFormedException();
         }
 
         // ERROR Cases
-        if (expressionAsArray.length < 5 && expressionAsArray.length > 1) {
+        if (expression.length() < 5 && expression.length() > 1) {
             // Is never allowed
             // Expression must either be:
             // 1. only one Number -> see Base Case
             // 2. at least 5 chars -> "(X+Y)"
             throw new ExpressionNotWellFormedException();
         }
-        if (!isOpeningParenthese(expressionAsArray[0]) && !isNumber(expressionAsArray[0])) {
+        if (!isOpeningParenthese(expression.charAt(0)) && !isNumber(expression.charAt(0))) {
             // Case: eg. "+...", "a..."
             throw new ExpressionNotWellFormedException();
         }
@@ -59,19 +60,19 @@ public class Parser {
         // FIND X
         Stack<Character> xStack = new Stack<Character>();
         int X = 0;
-        for (int i = 1; i < expressionAsArray.length; i++) {
-            if (isOpeningParenthese(expressionAsArray[i])) {
+        for (int i = 1; i < expression.length(); i++) {
+            if (isOpeningParenthese(expression.charAt(i))) {
                 xStack.push(')');
             }
-            if (isClosingParenthese(expressionAsArray[i])) {
+            if (isClosingParenthese(expression.charAt(i))) {
                 if (xStack.isEmpty())
                     throw new ExpressionNotWellFormedException();
                 xStack.pop();
             }
-            if (isSymbol(expressionAsArray[i]) && xStack.isEmpty() && i > 1) {
+            if (isSymbol(expression.charAt(i)) && xStack.isEmpty() && i > 1) {
                 // Found X
                 symbolIndex = i;
-                symbol = expressionAsArray[symbolIndex];
+                symbol = expression.charAt(symbolIndex);
                 X = parseRecursive(expression.substring(1, i));
                 break;
             }
@@ -79,7 +80,7 @@ public class Parser {
 
         // FIND Y
         // Y is string between the Symbol and the last closing Parenthese
-        String YExpression = expression.substring(symbolIndex + 1, expressionAsArray.length - 1);
+        String YExpression = expression.substring(symbolIndex + 1, expression.length() - 1);
         int Y = parseRecursive(YExpression);
 
         // Return Result according to symbol
@@ -181,7 +182,7 @@ public class Parser {
             wellFormedCheck("8", 8);
             wellFormedCheck("((1+1)*(2*2))", 8);
             wellFormedCheck("((1+9)*(2-5))", -30);
-            wellFormedCheck("((0-9)*((1+9)*(2-5)))", -270);
+            wellFormedCheck("((0-9)*((1+9)*(2-5)))", 270);
 
             notWellFormedCheck(")8+)1(())");
             notWellFormedCheck("(8+())");
